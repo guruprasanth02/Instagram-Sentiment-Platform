@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Sentiment Analyzer | AI Platform</title>
+  <meta name="description" content="AI-powered sentiment analysis platform for Instagram business comments. Classify comments as Positive, Neutral, or Negative instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <span class="logo-text">SentiGram <span class="badge-ai">AI</span></span>
+      </div>
+      <nav class="nav-links">
+        <a href="#analyzer" class="nav-link">Analyzer</a>
+        <a href="#dashboard" class="nav-link">Dashboard</a>
+      </nav>
+      <div id="health-dot" class="health-indicator" title="Checking API…">
+        <span class="dot"></span>
+        <span class="health-label">API</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── HERO ──────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        Instagram Sentiment<br/>
+        <span class="gradient-text">Analysis Platform</span>
+      </h1>
+      <p class="hero-subtitle">
+        Powered by NLP &amp; Machine Learning — classify customer comments in real-time.
+      </p>
+    </div>
+    <div class="hero-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+  </section>
+
+  <!-- ── ANALYZER ──────────────────────────────────────────────────────── -->
+  <section id="analyzer" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Sentiment Analyzer</h2>
+        <p class="section-subtitle">Enter an Instagram comment below and let AI classify it.</p>
+      </div>
+
+      <div class="analyzer-card glass">
+        <div class="input-group">
+          <label class="input-label" for="comment-input">💬 Instagram Comment</label>
+          <textarea
+            id="comment-input"
+            class="comment-textarea"
+            placeholder="e.g. This product is absolutely amazing! Love the packaging and quality."
+            maxlength="2000"
+            rows="4"
+          ></textarea>
+          <div class="char-count"><span id="char-count">0</span> / 2000</div>
+        </div>
+
+        <div class="btn-row">
+          <button id="analyze-btn" class="btn-primary" onclick="analyzeSentiment()">
+            <span class="btn-icon">⚡</span> Analyze Sentiment
+          </button>
+          <button class="btn-secondary" onclick="clearAll()">Clear</button>
+        </div>
+
+        <!-- Result Box -->
+        <div id="result-box" class="result-box hidden">
+          <div class="result-label">Detected Sentiment</div>
+          <div id="sentiment-badge" class="sentiment-badge"></div>
+          <div id="result-comment-preview" class="result-preview"></div>
+        </div>
+
+        <!-- Error Box -->
+        <div id="error-box" class="error-box hidden">
+          <span class="error-icon">⚠️</span>
+          <span id="error-message"></span>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <span>Analyzing comment…</span>
+        </div>
+      </div>
+
+      <!-- Quick Examples -->
+      <div class="examples-row">
+        <span class="examples-label">Try:</span>
+        <button class="example-chip positive-example" onclick="setExample('This product is absolutely amazing! Best purchase ever! 😍')">😍 Positive</button>
+        <button class="example-chip neutral-example" onclick="setExample('It is okay, nothing special. Arrived on time.')">😐 Neutral</button>
+        <button class="example-chip negative-example" onclick="setExample('Horrible quality! Broke after one day. Total waste of money.')">😠 Negative</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DASHBOARD ─────────────────────────────────────────────────────── -->
+  <section id="dashboard" class="section section-dark">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Sentiment Dashboard</h2>
+        <p class="section-subtitle">Live statistics from your current session.</p>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card glass">
+          <div class="stat-icon">🔢</div>
+          <div class="stat-value" id="total-analyzed">0</div>
+          <div class="stat-label">Total Analyzed</div>
+        </div>
+        <div class="stat-card glass positive-card">
+          <div class="stat-icon">😊</div>
+          <div class="stat-value" id="positive-count">0</div>
+          <div class="stat-label">Positive</div>
+        </div>
+        <div class="stat-card glass neutral-card">
+          <div class="stat-icon">😐</div>
+          <div class="stat-value" id="neutral-count">0</div>
+          <div class="stat-label">Neutral</div>
+        </div>
+        <div class="stat-card glass negative-card">
+          <div class="stat-icon">😠</div>
+          <div class="stat-value" id="negative-count">0</div>
+          <div class="stat-label">Negative</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card glass">
+          <h3 class="chart-title">Sentiment Distribution</h3>
+          <div class="chart-wrapper">
+            <canvas id="pieChart" aria-label="Pie chart showing sentiment distribution"></canvas>
+          </div>
+        </div>
+        <div class="chart-card glass">
+          <h3 class="chart-title">Sentiment Counts</h3>
+          <div class="chart-wrapper">
+            <canvas id="barChart" aria-label="Bar chart showing sentiment counts"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div class="history-card glass">
+        <h3 class="chart-title">Recent Predictions</h3>
+        <div class="table-wrapper">
+          <table class="history-table" id="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Comment</th>
+                <th>Sentiment</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr class="empty-row">
+                <td colspan="4">No predictions yet. Analyze a comment above!</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <p>🤖 Built with <strong>Flask</strong> · <strong>Scikit-learn</strong> · <strong>NLTK</strong> · <strong>Chart.js</strong></p>
+      <p class="footer-sub">Automated Sentiment Analysis Platform for Instagram Business Accounts</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
