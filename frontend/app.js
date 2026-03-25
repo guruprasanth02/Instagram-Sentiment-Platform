@@ -1,290 +1,293 @@
-/* ── app.js ──────────────────────────────────────────────────────────────────
-   Instagram Sentiment Analyzer — Frontend Logic
-   – Calls POST /predict via Fetch API
-   – Updates Chart.js Pie + Bar charts after each prediction
-   – Maintains session history table
-─────────────────────────────────────────────────────────────────────────────── */
+/**
+ * SentiGram — Analyzer Page Logic v3
+ * Handles URL/file analysis, tabs, campaign mode, theme, and auth.
+ */
 
-const API_BASE = "http://localhost:8000";
+document.addEventListener('DOMContentLoaded', () => {
+    // ── Elements ─────────────────────────────────────────────────────
+    const postUrlInput      = document.getElementById('post-url');
+    const commentFileInput  = document.getElementById('comment-file');
+    const analyzeBtn        = document.getElementById('analyze-btn');
+    const statusMessage     = document.getElementById('status-message');
+    const fileDropZone      = document.getElementById('file-drop-zone');
+    const fileSelected      = document.getElementById('file-selected');
+    const fileName          = document.getElementById('file-name');
+    const fileRemove        = document.getElementById('file-remove');
+    const addUrlBtn         = document.getElementById('add-url-btn');
+    const campaignUrlsContainer = document.getElementById('campaign-urls');
+    const urlInputContainer = document.getElementById('url-input-container');
 
-// ── Session state ─────────────────────────────────────────────────────────────
-const state = {
-  total: 0,
-  positive: 0,
-  neutral: 0,
-  negative: 0,
-  history: [],
-};
+    let currentUser = null;
 
-// ── Chart.js instances ────────────────────────────────────────────────────────
-let pieChart = null;
-let barChart = null;
+    // ── Theme Toggle ─────────────────────────────────────────────────
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
 
-const CHART_COLORS = {
-  positive: "rgba(34,197,94,0.85)",
-  neutral:  "rgba(245,158,11,0.85)",
-  negative: "rgba(239,68,68,0.85)",
-};
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark');
+            if (sunIcon) sunIcon.style.display = 'none';
+            if (moonIcon) moonIcon.style.display = 'block';
+        } else {
+            document.body.classList.remove('dark');
+            if (sunIcon) sunIcon.style.display = 'block';
+            if (moonIcon) moonIcon.style.display = 'none';
+        }
+    }
+    applyTheme(localStorage.getItem('theme') || 'light');
 
-const CHART_BORDERS = {
-  positive: "#22c55e",
-  neutral:  "#f59e0b",
-  negative: "#ef4444",
-};
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        });
+    }
 
-function initCharts() {
-  const chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: { color: "#94a3b8", font: { family: "Inter", size: 12 } },
-      },
-    },
-  };
 
-  // Pie Chart
-  const pieCtx = document.getElementById("pieChart").getContext("2d");
-  pieChart = new Chart(pieCtx, {
-    type: "doughnut",
-    data: {
-      labels: ["Positive", "Neutral", "Negative"],
-      datasets: [{
-        data: [0, 0, 0],
-        backgroundColor: [CHART_COLORS.positive, CHART_COLORS.neutral, CHART_COLORS.negative],
-        borderColor:      [CHART_BORDERS.positive, CHART_BORDERS.neutral, CHART_BORDERS.negative],
-        borderWidth: 2,
-        hoverOffset: 8,
-      }],
-    },
-    options: {
-      ...chartDefaults,
-      cutout: "65%",
-      plugins: {
-        ...chartDefaults.plugins,
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${pct(ctx.parsed)}%)`,
-          },
-        },
-      },
-    },
-  });
 
-  // Bar Chart
-  const barCtx = document.getElementById("barChart").getContext("2d");
-  barChart = new Chart(barCtx, {
-    type: "bar",
-    data: {
-      labels: ["Positive", "Neutral", "Negative"],
-      datasets: [{
-        label: "Count",
-        data: [0, 0, 0],
-        backgroundColor: [CHART_COLORS.positive, CHART_COLORS.neutral, CHART_COLORS.negative],
-        borderColor:      [CHART_BORDERS.positive, CHART_BORDERS.neutral, CHART_BORDERS.negative],
-        borderWidth: 1.5,
-        borderRadius: 8,
-        borderSkipped: false,
-      }],
-    },
-    options: {
-      ...chartDefaults,
-      scales: {
-        x: {
-          grid:  { color: "rgba(255,255,255,0.04)" },
-          ticks: { color: "#94a3b8", font: { family: "Inter" } },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: "#94a3b8", font: { family: "Inter" }, stepSize: 1, precision: 0 },
-          grid:  { color: "rgba(255,255,255,0.06)" },
-        },
-      },
-    },
-  });
-}
+    // ── Campaign URL Management ──────────────────────────────────────
+    if (addUrlBtn) {
+        addUrlBtn.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = 'campaign-url-input-group animate-fade-in';
+            div.innerHTML = `
+                <input type="text" class="campaign-url-input glass-input" placeholder="https://instagram.com/p/..." autocomplete="off">
+                <button class="btn-remove-url" onclick="this.parentElement.remove(); updateAnalyzeButton();" title="Remove">✕</button>
+            `;
+            campaignUrlsContainer.appendChild(div);
+            div.querySelector('input').addEventListener('input', updateAnalyzeButton);
+            updateAnalyzeButton();
+        });
+    }
 
-function pct(value) {
-  if (state.total === 0) return "0";
-  return ((value / state.total) * 100).toFixed(1);
-}
+    // ── Tab Navigation ───────────────────────────────────────────────
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-// ── Update charts & counters ──────────────────────────────────────────────────
-function updateDashboard() {
-  document.getElementById("total-analyzed").textContent = state.total;
-  document.getElementById("positive-count").textContent = state.positive;
-  document.getElementById("neutral-count").textContent  = state.neutral;
-  document.getElementById("negative-count").textContent = state.negative;
-
-  pieChart.data.datasets[0].data = [state.positive, state.neutral, state.negative];
-  barChart.data.datasets[0].data = [state.positive, state.neutral, state.negative];
-  pieChart.update();
-  barChart.update();
-}
-
-// ── History table ─────────────────────────────────────────────────────────────
-function addHistoryRow(comment, sentiment) {
-  const tbody = document.getElementById("history-body");
-
-  // Remove "empty" row if present
-  const emptyRow = tbody.querySelector(".empty-row");
-  if (emptyRow) emptyRow.remove();
-
-  const idx = state.history.length;
-  const now  = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  const preview = comment.length > 70 ? comment.slice(0, 70) + "…" : comment;
-  const cls     = `badge-${sentiment}`;
-  const label   = sentiment.charAt(0).toUpperCase() + sentiment.slice(1);
-
-  const row = document.createElement("tr");
-  row.innerHTML = `
-    <td>${idx + 1}</td>
-    <td title="${escapeHtml(comment)}">${escapeHtml(preview)}</td>
-    <td><span class="badge-small ${cls}">${label}</span></td>
-    <td>${now}</td>
-  `;
-  tbody.insertBefore(row, tbody.firstChild);
-
-  // Keep at most 50 rows
-  while (tbody.rows.length > 50) tbody.deleteRow(tbody.rows.length - 1);
-
-  state.history.unshift({ comment, sentiment, time: now });
-}
-
-function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
-}
-
-// ── Analyze Sentiment ─────────────────────────────────────────────────────────
-async function analyzeSentiment() {
-  const textarea = document.getElementById("comment-input");
-  const comment  = textarea.value.trim();
-
-  if (!comment) {
-    showError("Please enter a comment before analyzing.");
-    return;
-  }
-
-  setUIState("loading");
-
-  try {
-    const res = await fetch(`${API_BASE}/predict`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment }),
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+            updateAnalyzeButton();
+        });
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `HTTP ${res.status}`);
+    // ── Sample Chips ─────────────────────────────────────────────────
+    document.querySelectorAll('.sample-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            postUrlInput.value = btn.dataset.url;
+            updateAnalyzeButton();
+            btn.style.borderColor = 'var(--c-brand)';
+            btn.style.color = 'var(--c-brand)';
+            setTimeout(() => { btn.style.borderColor = ''; btn.style.color = ''; }, 1200);
+        });
+    });
+
+    // ── URL Input ────────────────────────────────────────────────────
+    if (postUrlInput) postUrlInput.addEventListener('input', updateAnalyzeButton);
+
+    // ── File Upload ──────────────────────────────────────────────────
+    if (commentFileInput) {
+        commentFileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+    }
+    if (fileDropZone) {
+        fileDropZone.addEventListener('click', () => commentFileInput.click());
+        fileDropZone.addEventListener('dragover', (e) => { e.preventDefault(); fileDropZone.classList.add('drag-over'); });
+        fileDropZone.addEventListener('dragleave', () => fileDropZone.classList.remove('drag-over'));
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); fileDropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                commentFileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+    }
+    if (fileRemove) {
+        fileRemove.addEventListener('click', (e) => {
+            e.stopPropagation();
+            commentFileInput.value = '';
+            fileSelected.style.display = 'none';
+            updateAnalyzeButton();
+        });
     }
 
-    const data = await res.json();
-    const sentiment = data.sentiment.toLowerCase();   // "positive"|"neutral"|"negative"
+    function handleFileSelect(file) {
+        if (file) {
+            fileName.textContent = file.name;
+            fileSelected.style.display = 'inline-flex';
+            updateAnalyzeButton();
+        }
+    }
 
-    // Update state
-    state.total++;
-    state[sentiment] = (state[sentiment] || 0) + 1;
+    // ── Button State ─────────────────────────────────────────────────
+    function updateAnalyzeButton() {
+        const activeTabObj = document.querySelector('.tab-btn.active');
+        if (!activeTabObj || !analyzeBtn) return;
+        const activeTab = activeTabObj.dataset.tab;
 
-    // Update UI
-    showResult(comment, sentiment);
-    addHistoryRow(comment, sentiment);
-    updateDashboard();
+        if (activeTab === 'url-tab') {
+            analyzeBtn.disabled = !postUrlInput.value.trim();
+        } else {
+            analyzeBtn.disabled = (!commentFileInput.files || !commentFileInput.files.length);
+        }
 
-  } catch (err) {
-    showError(
-      err.message.includes("Failed to fetch")
-        ? "Cannot reach the API. Make sure the backend is running on port 8000."
-        : err.message
-    );
-  }
-}
+        const saveCb = document.getElementById('save-history');
+        if (saveCb) {
+            saveCb.disabled = !currentUser;
+            if (!currentUser) saveCb.checked = false;
+        }
+    }
+    window.updateAnalyzeButton = updateAnalyzeButton;
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function setUIState(mode) {
-  document.getElementById("result-box").classList.add("hidden");
-  document.getElementById("error-box").classList.add("hidden");
-  document.getElementById("loading").classList.add("hidden");
+    // ── Analyze Click ────────────────────────────────────────────────
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', () => {
+            const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+            const typeEl = document.querySelector('input[name="analysis-type"]:checked');
+            const isCampaign = typeEl ? typeEl.value === 'campaign' : false;
 
-  if (mode === "loading") {
-    document.getElementById("loading").classList.remove("hidden");
-    document.getElementById("analyze-btn").disabled = true;
-  } else {
-    document.getElementById("analyze-btn").disabled = false;
-  }
-}
+            if (activeTab === 'url-tab') {
+                const url = postUrlInput.value.trim();
+                if (url) analyzeUrl(url);
+            } else {
+                const file = commentFileInput.files[0];
+                if (file) analyzeFile(file);
+            }
+        });
+    }
 
-function showResult(comment, sentiment) {
-  setUIState("idle");
-  const box     = document.getElementById("result-box");
-  const badge   = document.getElementById("sentiment-badge");
-  const preview = document.getElementById("result-comment-preview");
+    // ── Mobile Menu ──────────────────────────────────────────────────
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const navLinks = document.getElementById('nav-links');
+    if (mobileMenuBtn && navLinks) {
+        mobileMenuBtn.addEventListener('click', () => navLinks.classList.toggle('open'));
+    }
 
-  const emojis = { positive: "😊 Positive", neutral: "😐 Neutral", negative: "😠 Negative" };
+    // ── Auth ─────────────────────────────────────────────────────────
+    async function initAuth() {
+        try {
+            const res = await fetch('/me');
+            const data = await res.json();
+            const profileNav = document.getElementById('nav-profile-link');
+            const logoutBtn = document.getElementById('logout-btn');
+            const dashboardNav = document.getElementById('nav-dashboard-link');
 
-  badge.className  = `sentiment-badge ${sentiment}`;
-  badge.textContent = emojis[sentiment] || sentiment;
-  preview.textContent = `"${comment.slice(0, 100)}${comment.length > 100 ? "…" : ""}"`;
+            if (!data.guest) {
+                currentUser = data;
+                if (profileNav) profileNav.style.display = 'flex';
+                if (logoutBtn) logoutBtn.style.display = 'flex';
+                if (dashboardNav) dashboardNav.style.display = 'flex';
+                const nameEl = document.getElementById('nav-user-name');
+                const avatarEl = document.getElementById('user-avatar');
+                if (nameEl) nameEl.textContent = data.name;
+                if (avatarEl) avatarEl.textContent = data.name.charAt(0).toUpperCase();
+                const loginHint = document.getElementById('login-hint');
+                const saveHistory = document.getElementById('save-history');
+                if (loginHint) loginHint.textContent = `(${data.email})`;
+                if (saveHistory) saveHistory.disabled = false;
+                window.isLoggedIn = true;
+            } else {
+                if (profileNav) profileNav.style.display = 'none';
+                if (logoutBtn) logoutBtn.style.display = 'none';
+            }
+        } catch (e) { console.warn('Auth check failed', e); }
+        updateAnalyzeButton();
+    }
 
-  box.classList.remove("hidden");
-  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try { await fetch('/logout'); } catch(e) {}
+            window.location.href = 'login.html';
+        });
+    }
 
-function showError(message) {
-  setUIState("idle");
-  document.getElementById("error-message").textContent = message;
-  document.getElementById("error-box").classList.remove("hidden");
-}
-
-function clearAll() {
-  document.getElementById("comment-input").value = "";
-  document.getElementById("char-count").textContent = "0";
-  document.getElementById("result-box").classList.add("hidden");
-  document.getElementById("error-box").classList.add("hidden");
-}
-
-function setExample(text) {
-  document.getElementById("comment-input").value = text;
-  document.getElementById("char-count").textContent = text.length;
-  document.getElementById("result-box").classList.add("hidden");
-  document.getElementById("error-box").classList.add("hidden");
-}
-
-// ── Character counter ─────────────────────────────────────────────────────────
-document.getElementById("comment-input").addEventListener("input", function () {
-  document.getElementById("char-count").textContent = this.value.length;
+    // ── Init ─────────────────────────────────────────────────────────
+    updateAnalyzeButton();
+    initAuth();
 });
 
-// Ctrl+Enter → analyze
-document.getElementById("comment-input").addEventListener("keydown", function (e) {
-  if (e.ctrlKey && e.key === "Enter") analyzeSentiment();
-});
 
-// ── API Health Check ──────────────────────────────────────────────────────────
-async function checkHealth() {
-  const dot = document.getElementById("health-dot");
-  try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      dot.className = "health-indicator online";
-      dot.title     = "API is online";
-      dot.querySelector(".health-label").textContent = "Online";
+/* ═══════════════════════════════════════════════════════════════════
+   API FUNCTIONS
+   ═══════════════════════════════════════════════════════════════════ */
+
+function showStatus(message, type) {
+    const el = document.getElementById('status-message');
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'status-message ' + type;
+    el.style.display = 'block';
+}
+
+function hideStatus() {
+    const el = document.getElementById('status-message');
+    if (el) el.style.display = 'none';
+}
+
+function setLoading(isLoading) {
+    const btn = document.getElementById('analyze-btn');
+    if (!btn) return;
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    const steps = document.getElementById('processing-steps');
+
+    if (isLoading) {
+        btn.disabled = true;
+        if (btnText) btnText.style.display = 'none';
+        if (btnLoading) btnLoading.style.display = 'inline-flex';
+        if (steps) { steps.style.display = 'flex'; runProgressSimulation(); }
     } else {
-      throw new Error("Non-OK response");
+        if (btnText) btnText.style.display = 'inline-flex';
+        if (btnLoading) btnLoading.style.display = 'none';
+        if (steps) steps.style.display = 'none';
     }
-  } catch {
-    dot.className = "health-indicator offline";
-    dot.title     = "API is offline — start the server";
-    dot.querySelector(".health-label").textContent = "Offline";
-  }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", () => {
-  initCharts();
-  checkHealth();
-  setInterval(checkHealth, 15000);
-});
+async function runProgressSimulation() {
+    const sleep = m => new Promise(r => setTimeout(r, m));
+    for (const s of [1,2,3,4]) {
+        const el = document.getElementById(`step-${s}`);
+        if (!el) continue;
+        el.className = 'proc-step active';
+        await sleep(600 + Math.random() * 600);
+        el.className = 'proc-step done';
+    }
+}
+
+async function analyzeUrl(url, urls = null) {
+    setLoading(true); hideStatus();
+    const saveHistory = document.getElementById('save-history')?.checked;
+    const body = { url };
+    if (urls) body.urls = urls;
+    if (saveHistory) body.save_to_history = true;
+    try {
+        const response = await fetch('/analyze_url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await response.json();
+        if (response.ok) {
+            showStatus(`✅ ${data.total} comments analyzed successfully!`, 'success');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+        } else { showStatus(`❌ ${data.error || 'Error'}`, 'error'); setLoading(false); }
+    } catch { showStatus('❌ Connection error.', 'error'); setLoading(false); }
+}
+
+async function analyzeFile(file) {
+    setLoading(true); hideStatus();
+    const formData = new FormData();
+    formData.append('file', file);
+    if (document.getElementById('save-history')?.checked) formData.append('save_to_history', 'true');
+    try {
+        const response = await fetch('/analyze_file', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (response.ok) {
+            showStatus(`✅ ${data.total} comments analyzed!`, 'success');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+        } else { showStatus(`❌ ${data.error || 'Error'}`, 'error'); setLoading(false); }
+    } catch { showStatus('❌ Connection error.', 'error'); setLoading(false); }
+}

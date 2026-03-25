@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — SentiGram</title>
+  <meta name="description" content="Sign in to SentiGram to access your sentiment analysis dashboard and history.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    .auth-page { display:flex; align-items:center; justify-content:center; min-height:calc(100vh - 64px); padding:2rem; position:relative; }
+    .auth-glow { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:500px; height:500px; background:radial-gradient(circle,rgba(99,102,241,0.08) 0%,transparent 65%); pointer-events:none; z-index:0; }
+    .auth-card { width:100%; max-width:420px; padding:var(--sp-10); position:relative; z-index:10; }
+    .auth-head { text-align:center; margin-bottom:var(--sp-8); }
+    .auth-title { font-size:1.5rem; font-weight:800; color:var(--c-text); margin-bottom:var(--sp-2); }
+    .auth-sub { font-size:0.9rem; color:var(--c-text-2); }
+    .auth-field { margin-bottom:var(--sp-4); }
+    .auth-field label { display:block; font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--c-text-3); letter-spacing:0.05em; margin-bottom:var(--sp-2); }
+    .auth-field input { width:100%; padding:var(--sp-3) var(--sp-4); background:var(--bg-muted); border:1.5px solid var(--c-border); border-radius:var(--r-md); color:var(--c-text); font-size:0.95rem; transition:all var(--t-fast); }
+    .auth-field input:focus { outline:none; border-color:var(--c-brand); box-shadow:var(--shadow-focus); background:var(--bg-card); }
+    .auth-field input:-webkit-autofill { -webkit-box-shadow:0 0 0 30px var(--bg-muted) inset !important; -webkit-text-fill-color:var(--c-text) !important; }
+    .auth-actions { display:flex; flex-direction:column; gap:var(--sp-4); margin-top:var(--sp-6); }
+    .auth-actions .btn-primary { width:100%; justify-content:center; padding:var(--sp-3) var(--sp-5); }
+    .auth-divider { display:flex; align-items:center; gap:var(--sp-4); color:var(--c-text-3); font-size:0.8rem; }
+    .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--c-border); }
+    .auth-toggle { background:none; border:none; color:var(--c-brand); font-weight:600; font-size:0.875rem; cursor:pointer; text-decoration:underline; }
+    .auth-toggle:hover { opacity:0.8; }
+    #auth-status { display:none; padding:var(--sp-3) var(--sp-4); border-radius:var(--r-md); font-size:0.85rem; font-weight:600; text-align:center; margin-bottom:var(--sp-4); }
+    #auth-status.error { display:block; background:var(--c-neg-bg); color:var(--c-neg); border:1px solid var(--c-neg-border); }
+    #auth-status.success { display:block; background:var(--c-pos-bg); color:var(--c-pos); border:1px solid var(--c-pos-border); }
+
+    /* Google Sign-In Button */
+
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <svg class="logo-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="logo-text">Senti<span class="logo-accent">Gram</span></span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Analyzer
+        </a>
+      </nav>
+      <div class="header-right">
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+          <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <div class="auth-glow"></div>
+    <div class="auth-card glass animate-fade-in">
+      <div class="auth-head">
+        <h1 class="auth-title" id="auth-title-text">Welcome Back</h1>
+        <p class="auth-sub" id="auth-subtitle-text">Sign in to access your dashboard</p>
+      </div>
+
+      <div id="auth-status"></div>
+
+      <form id="auth-form">
+        <div class="auth-field" id="name-wrapper" style="display:none;">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Your name" autocomplete="name">
+        </div>
+        <div class="auth-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="auth-actions">
+          <button type="submit" id="btn-submit" class="btn-primary">Sign In</button>
+          <div class="auth-divider"><span></span></div>
+          <button type="button" id="btn-toggle-mode" class="auth-toggle">Create an account</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    // Theme Toggle
+    const toggle = document.getElementById('theme-toggle');
+    const sun = document.querySelector('.sun-icon');
+    const moon = document.querySelector('.moon-icon');
+    function setTheme(t) {
+      if (t === 'dark') { document.body.classList.add('dark'); sun.style.display='none'; moon.style.display='block'; }
+      else { document.body.classList.remove('dark'); sun.style.display='block'; moon.style.display='none'; }
+    }
+    setTheme(localStorage.getItem('theme') || 'light');
+    toggle.addEventListener('click', () => {
+      const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+      localStorage.setItem('theme', next); setTheme(next);
+    });
+
+    // Auth Logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('auth-form');
+      const nameWrap = document.getElementById('name-wrapper');
+      const nameIn = document.getElementById('name');
+      const emailIn = document.getElementById('email');
+      const passIn = document.getElementById('password');
+      const btnSubmit = document.getElementById('btn-submit');
+      const btnToggle = document.getElementById('btn-toggle-mode');
+      const status = document.getElementById('auth-status');
+      const titleEl = document.getElementById('auth-title-text');
+      const subEl = document.getElementById('auth-subtitle-text');
+      let isLogin = true;
+
+      function showMsg(msg, err) { status.textContent = msg; status.className = err ? 'error' : 'success'; }
+
+      btnToggle.addEventListener('click', () => {
+        isLogin = !isLogin; status.style.display = 'none';
+        if (isLogin) { titleEl.textContent='Welcome Back'; subEl.textContent='Sign in to access your dashboard'; nameWrap.style.display='none'; nameIn.required=false; btnSubmit.textContent='Sign In'; btnToggle.textContent='Create an account'; }
+        else { titleEl.textContent='Create Account'; subEl.textContent='Sign up to start analyzing sentiment'; nameWrap.style.display='block'; nameIn.required=true; btnSubmit.textContent='Sign Up'; btnToggle.textContent='Already have an account? Sign In'; }
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const type = isLogin ? 'login' : 'register';
+        const email = emailIn.value.trim(), pass = passIn.value, name = nameIn.value.trim();
+        if (!email || !pass || (!isLogin && !name)) return showMsg('Please fill all fields.', true);
+        btnSubmit.disabled = true; btnSubmit.textContent = isLogin ? 'Signing in…' : 'Creating…';
+        try {
+          const body = { email, password: pass }; if (!isLogin) body.name = name;
+          const res = await fetch(`/${type}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+          const data = await res.json();
+          if (res.ok) {
+            showMsg(isLogin ? 'Welcome! Redirecting…' : 'Account created!', false);
+            if (!isLogin) await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+            setTimeout(() => { window.location.href = 'index.html'; }, 800);
+          } else { showMsg(data.error || 'Failed.', true); btnSubmit.disabled=false; btnSubmit.textContent=isLogin?'Sign In':'Sign Up'; }
+        } catch { showMsg('Connection error.', true); btnSubmit.disabled=false; btnSubmit.textContent=isLogin?'Sign In':'Sign Up'; }
+      });
+
+      // Already logged in? Redirect
+      fetch('/me').then(r=>r.json()).then(d=>{ if(!d.guest) window.location.href='index.html'; }).catch(()=>{});
+    });
+  </script>
+</body>
+</html>

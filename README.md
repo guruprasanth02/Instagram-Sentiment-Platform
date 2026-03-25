@@ -1,6 +1,23 @@
-# 📊 Automated Sentiment Analysis Platform for Instagram Business Accounts
+# 📊 Automated Sentiment Analysis Platform for Instagram
 
-An end-to-end AI platform that analyzes Instagram-style comments and classifies them as **Positive**, **Neutral**, or **Negative** using NLP and Machine Learning.
+An end-to-end AI platform that analyzes Instagram comments and classifies them as **Positive**, **Neutral**, or **Negative** using NLP and Machine Learning.
+
+---
+
+### ✨ Features
+
+- **Instagram Post URL Analysis**: Paste post URL → extracts shortcode → loads simulated comments → sentiment analysis
+- **Simulated Datasets**: `data/post_comments/comments_{POSTID}.csv` - production-ready simulation (easy Graph API upgrade)
+- **File Upload**: CSV analysis fallback
+- **Interactive Dashboard**: Pie chart, bar chart, comment history
+- **Battle-tested ML**: TF-IDF + Linear SVM (90%+ accuracy)
+
+
+---
+
+### 🖼️ Screenshot
+
+*(placeholder for a screenshot of the new UI)*
 
 ---
 
@@ -9,15 +26,17 @@ An end-to-end AI platform that analyzes Instagram-style comments and classifies 
 ```
 instagram-sentiment-platform/
 ├── frontend/
-│   ├── index.html       # Main web UI
-│   ├── style.css        # Dark glassmorphism styles
-│   └── app.js           # Chart.js + Fetch API logic
+│   ├── index.html         # Main analyzer UI
+│   ├── dashboard.html     # Dashboard for results
+│   ├── style.css          # Modern and clean styles
+│   ├── app.js             # Logic for the analyzer
+│   └── dashboard.js       # Logic for the dashboard
 ├── backend/
-│   ├── app.py           # FastAPI application
-│   └── predict.py       # Model loading & prediction logic
+│   ├── app.py             # Flask application
+│   └── predict.py         # Model loading & prediction logic
 ├── ml/
-│   ├── preprocess.py    # Text cleaning & lemmatization
-│   └── train_model.py   # TF-IDF, SVM, Logistic Regression training
+│   ├── preprocess.py      # Text cleaning & lemmatization
+│   └── train_model.py     # TF-IDF, SVM, Logistic Regression training
 ├── models/
 │   ├── svm_model.pkl
 │   ├── logreg_model.pkl
@@ -51,11 +70,11 @@ This will create `.pkl` files inside the `models/` directory.
 
 ### 4. Start the backend server
 ```bash
-uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload
+python backend/app.py
 ```
 
 ### 5. Open the frontend
-Open `frontend/index.html` in your browser, or navigate to `http://localhost:8000` if served from FastAPI.
+Open `frontend/index.html` in your browser.
 
 ---
 
@@ -67,19 +86,39 @@ Returns model status.
 {"status": "model loaded successfully"}
 ```
 
-### `POST /predict`
-Classifies a comment's sentiment.
-
+### `POST /analyze_url`
+Analyzes comments from a given URL.
 **Request:**
 ```json
-{"comment": "This product is absolutely amazing!"}
+{"url": "https://www.instagram.com/p/Cg-jZ1_J1Z-/"}
 ```
 
+### `POST /analyze_file`
+Analyzes comments from an uploaded file.
+**Request:**
+```
+Content-Type: multipart/form-data
+Body: file
+```
+
+### `GET /results`
+Returns the analysis results.
 **Response:**
 ```json
-{"sentiment": "positive"}
+{
+  "total": 100,
+  "positive_count": 60,
+  "neutral_count": 20,
+  "negative_count": 20,
+  "history": [
+    {
+      "comment": "This is amazing!",
+      "sentiment": "Positive",
+      "timestamp": "2023-01-01T12:00:00Z"
+    }
+  ]
+}
 ```
-
 ---
 
 ## 🧠 ML Pipeline
@@ -96,10 +135,10 @@ Classifies a comment's sentiment.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Python, FastAPI, Uvicorn
+- **Backend**: Python, Flask
 - **ML**: Scikit-learn, NLTK
 - **Data**: Pandas, NumPy
-- **Visualization**: Matplotlib, Seaborn, Chart.js (frontend)
+- **Frontend**: HTML, CSS, JavaScript, Chart.js
 - **Config**: python-dotenv
 
 ---

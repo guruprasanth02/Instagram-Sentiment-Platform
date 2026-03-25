@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — SentiGram Analytics</title>
+  <meta name="description" content="View sentiment analysis results, trends, and audience insights from your Instagram posts.">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header" id="main-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <svg class="logo-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="logo-text">Senti<span class="logo-accent">Gram</span></span>
+      </a>
+
+      <nav class="nav-links" id="nav-links">
+        <a href="index.html" class="nav-link" id="nav-analyzer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Analyzer
+        </a>
+        <a href="#" class="nav-link active" id="nav-dashboard-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-link" id="nav-profile-link">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="nav-user-name">Profile</span>
+        </a>
+        <button id="logout-btn" class="nav-link" style="background:none;border:none;cursor:pointer;color:var(--c-neg);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </button>
+      </nav>
+
+      <div class="header-right">
+        <div id="health-dot" class="health-indicator" title="Checking…">
+          <span class="dot"></span>
+          <span class="health-label">API</span>
+        </div>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+          <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="container" style="padding:2rem 1.5rem; min-height:80vh;">
+
+    <!-- ─── DASHBOARD VIEW ─── -->
+    <div id="dashboard-view" class="view-section active animate-fade-in">
+
+      <!-- Header Bar -->
+      <div class="glass dashboard-header-v2">
+        <div class="header-info">
+          <h1>Analytics Overview</h1>
+          <p class="subtitle">Sentiment analysis results and audience insights</p>
+        </div>
+        <div class="live-signal">
+          <span class="pulse-dot"></span>
+          LIVE
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid-v2">
+        <div class="glass stat-card-v2" style="border-top:3px solid var(--c-info)">
+          <div class="card-head">
+            <span class="label">Total Analyzed</span>
+            <div class="icon blue">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </div>
+          </div>
+          <div class="value" id="total-analyzed">—</div>
+        </div>
+
+        <div class="glass stat-card-v2" style="border-top:3px solid var(--c-pos)">
+          <div class="card-head">
+            <span class="label">Positive</span>
+            <div class="icon green"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
+          </div>
+          <div class="split-value">
+            <span class="value" id="positive-count">—</span>
+            <span class="tag pos" id="positive-percent">0%</span>
+          </div>
+          <div class="mini-bar-bg"><div class="mini-bar green" id="positive-bar-v2" style="width:0%"></div></div>
+        </div>
+
+        <div class="glass stat-card-v2" style="border-top:3px solid var(--c-neu)">
+          <div class="card-head">
+            <span class="label">Neutral</span>
+            <div class="icon purple"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+          </div>
+          <div class="split-value">
+            <span class="value" id="neutral-count">—</span>
+            <span class="tag neu" id="neutral-percent">0%</span>
+          </div>
+          <div class="mini-bar-bg"><div class="mini-bar purple" id="neutral-bar-v2" style="width:0%"></div></div>
+        </div>
+
+        <div class="glass stat-card-v2" style="border-top:3px solid var(--c-neg)">
+          <div class="card-head">
+            <span class="label">Negative</span>
+            <div class="icon red"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          </div>
+          <div class="split-value">
+            <span class="value" id="negative-count">—</span>
+            <span class="tag neg" id="negative-percent">0%</span>
+          </div>
+          <div class="mini-bar-bg"><div class="mini-bar red" id="negative-bar-v2" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="dashboard-grid charts" style="margin-top:1.5rem;">
+        <div class="glass chart-card-v2">
+          <div class="card-header-v2">Sentiment Distribution</div>
+          <div class="card-body-v2 flex-center">
+            <div class="donut-container">
+              <canvas id="sentimentChart"></canvas>
+              <div class="donut-center">
+                <div class="donut-value" id="donut-percent">0%</div>
+                <div class="donut-label">Positive</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass chart-card-v2">
+          <div class="card-header-v2">Response Trend</div>
+          <div class="card-body-v2">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="dashboard-grid actions" style="margin-top:1.5rem;">
+        <div class="glass action-card-v2" style="border-left:3px solid var(--c-brand);">
+          <h3>Export Report</h3>
+          <p>Download analysis results as a CSV file for your records.</p>
+          <button id="download-report-btn" class="btn-primary">Download CSV</button>
+        </div>
+        <div class="glass action-card-v2" style="border-left:3px solid var(--c-neu);">
+          <h3>Compare Sessions</h3>
+          <p>Benchmark current results against previous analyses.</p>
+          <button id="open-compare-btn" class="btn-outline">Compare</button>
+        </div>
+        <div class="glass action-card-v2" style="border-left:3px solid var(--c-pos);">
+          <h3>AI Recommendations</h3>
+          <p>Suggestions based on detected sentiment patterns.</p>
+          <ul id="recommendations-list" class="tips-stack">
+            <li>Run an analysis to get recommendations.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Peek -->
+      <div class="dashboard-grid" style="margin-top:1.5rem;">
+        <div class="glass peek-card" style="border-top:3px solid var(--c-pos);">
+          <h4>Top Positive Comment</h4>
+          <p class="peek-txt" id="top-positive-comment">"Run an analysis to see results."</p>
+        </div>
+        <div class="glass peek-card" style="border-top:3px solid var(--c-neg);">
+          <h4>Top Negative Comment</h4>
+          <p class="peek-txt" id="top-negative-comment">"Run an analysis to see results."</p>
+        </div>
+      </div>
+
+      <!-- Explorer -->
+      <div class="glass explorer-panel" style="margin-top:1.5rem;">
+        <div class="panel-header">
+          <h3>Comment Explorer</h3>
+          <div class="panel-filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="Positive">Positive</button>
+            <button class="filter-btn" data-filter="Neutral">Neutral</button>
+            <button class="filter-btn" data-filter="Negative">Negative</button>
+          </div>
+        </div>
+        <div class="panel-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Comment</th><th>Sentiment</th><th>Score</th></tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="3" style="text-align:center;color:var(--c-text-3);padding:2rem;">No data yet. Analyze a post to see results here.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PROFILE VIEW ─── -->
+    <div id="profile-view" class="view-section animate-fade-in" style="display:none;">
+      <div class="dashboard-grid profile-layout" style="margin-top:1rem;">
+        <div class="glass profile-core">
+          <h2>Account Settings</h2>
+          <div class="profile-split">
+            <div class="avatar-box">
+              <div class="profile-avatar-large" id="profile-avatar-large">
+                <img id="profile-image-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Profile">
+                <span id="profile-avatar-initial" style="font-size:2.5rem;font-weight:700;color:var(--c-brand);"></span>
+              </div>
+              <p class="muted" style="font-size:0.8rem;margin-top:0.5rem;" id="profile-auth-method">Email login</p>
+            </div>
+            <div class="profile-form">
+              <div class="input-stacked">
+                <label>Display Name</label>
+                <input type="text" id="profile-name-input" class="glass-input" value="">
+              </div>
+              <div class="input-stacked">
+                <label>Email Address</label>
+                <input type="email" id="profile-email-input" class="glass-input" value="" readonly style="opacity:0.7;cursor:not-allowed;">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1rem;">
+                <div style="display:flex;gap:0.75rem;align-items:center;">
+                  <button class="btn-primary" style="width:fit-content;" id="save-profile-btn">Save Changes</button>
+                  <span id="profile-save-status" style="font-size:0.8rem;font-weight:600;color:var(--c-pos);display:none;">✓ Saved</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass profile-core" style="margin-top: 1.5rem;">
+            <h2>Change Password</h2>
+            <div class="profile-form">
+              <div class="input-stacked">
+                <label>New Password</label>
+                <input type="password" id="profile-new-password-input" class="glass-input" placeholder="Enter new password">
+              </div>
+              <div class="input-stacked">
+                <label>Confirm New Password</label>
+                <input type="password" id="profile-confirm-password-input" class="glass-input" placeholder="Confirm new password">
+              </div>
+              <div style="display:flex;gap:0.75rem;align-items:center;">
+                <button class="btn-primary" style="width:fit-content;" id="change-password-btn">Change Password</button>
+                <span id="change-password-status" style="font-size:0.8rem;font-weight:600;display:none;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-side">
+          <div class="glass settings-box">
+            <h3>Account Stats</h3>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <div style="display:flex;justify-content:space-between;"><span class="muted">Total Analyses</span><strong id="profile-total-analyses">0</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span class="muted">Avg Sentiment</span><strong id="profile-avg-sentiment">Neutral</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span class="muted">Member Since</span><strong id="profile-member-since">—</strong></div>
+            </div>
+          </div>
+          <div class="glass settings-box">
+            <h3>Preferences</h3>
+            <p class="muted">Use the theme toggle in the header to switch between light and dark modes. Your preference is saved automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ COMPARE MODAL ═══ -->
+  <div id="compare-modal" class="modal-overlay">
+    <div class="modal-window glass">
+      <button class="close-btn" id="close-compare-btn">✕</button>
+      <h2>Compare Analyses</h2>
+      <div class="modal-actions">
+        <div class="select-field">
+          <label>Select Previous Analysis</label>
+          <select id="compare-select" class="glass-select"></select>
+        </div>
+        <button id="run-compare-btn" class="btn-primary">Run Comparison</button>
+      </div>
+      <div id="comparison-results" class="comparison-display" style="display:none;">
+        <div class="comp-grid">
+          <div class="glass comp-tile">
+            <p id="comp-label-1">Analysis A</p>
+            <h4 id="comp-score-1">0%</h4>
+          </div>
+          <div class="glass comp-tile highlight">
+            <p id="comp-label-2">Analysis B</p>
+            <h4 id="comp-score-2">0%</h4>
+          </div>
+        </div>
+        <div class="glass comp-summary">
+          <p id="comp-conclusion-text"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

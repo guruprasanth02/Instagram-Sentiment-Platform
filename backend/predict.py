@@ -25,8 +25,8 @@ _model = None
 def _load_models():
     global _vectorizer, _model
     if _vectorizer is None or _model is None:
-        vec_path = os.path.join(MODEL_DIR, "tfidf_vectorizer.pkl")
-        svm_path = os.path.join(MODEL_DIR, "svm_model.pkl")
+        vec_path = os.path.join(MODEL_DIR, "instagram_tfidf_vectorizer.pkl")
+        svm_path = os.path.join(MODEL_DIR, "instagram_svm_model.pkl")
 
         if not os.path.exists(vec_path) or not os.path.exists(svm_path):
             raise FileNotFoundError(
@@ -57,6 +57,42 @@ def predict_sentiment(comment: str) -> str:
     features = _vectorizer.transform([cleaned])
     label = _model.predict(features)[0]
     return label.lower()
+
+
+def predict_sentiment_with_score(comment: str) -> tuple:
+    """
+    Predict sentiment and return a confidence score (0-1).
+
+    Returns:
+        (label, score) tuple.
+    """
+    _load_models()
+
+    cleaned = clean_text(comment)
+    if not cleaned.strip():
+        return "neutral", 0.5
+
+    features = _vectorizer.transform([cleaned])
+    label = _model.predict(features)[0].lower()
+
+    # Use decision_function for confidence
+    try:
+        scores = _model.decision_function(features)[0]
+        # For multi-class, scores is array; take max absolute as confidence
+        import numpy as np
+        if hasattr(scores, '__len__'):
+            confidence = float(np.max(np.abs(scores)))
+        else:
+            confidence = float(abs(scores))
+        # Normalize to 0-1 using sigmoid-like mapping
+        confidence = 1.0 / (1.0 + np.exp(-confidence))
+        if confidence < 0.5:
+            label = 'neutral'
+            confidence = 0.5  # Low confidence defaults to neutral
+    except Exception:
+        confidence = 0.5
+
+    return label, round(confidence, 3)
 
 
 def is_model_loaded() -> bool:
