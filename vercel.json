@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/analyze_url",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/analyze_url"
+    },
+    {
+      "source": "/analyze_file",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/analyze_file"
+    },
+    {
+      "source": "/me",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/me"
+    },
+    {
+      "source": "/login",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/login"
+    },
+    {
+      "source": "/register",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/register"
+    },
+    {
+      "source": "/health",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/health"
+    },
+    {
+      "source": "/results",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/results"
+    },
+    {
+      "source": "/history",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/history"
+    },
+    {
+      "source": "/logout",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/logout"
+    },
+    {
+      "source": "/reset-password-request",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/reset-password-request"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/reset-password"
+    },
+    {
+      "source": "/update_profile",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/update_profile"
+    },
+    {
+      "source": "/compare",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/compare"
+    },
+    {
+      "source": "/init_db",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/init_db"
+    },
+    {
+      "source": "/google_client_id",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/google_client_id"
+    },
+    {
+      "source": "/download_report",
+      "destination": "https://YOUR_RENDER_BACKEND.onrender.com/download_report"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ]
+}
+
