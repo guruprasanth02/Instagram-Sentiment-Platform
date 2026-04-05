@@ -21,6 +21,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# -- NLTK data (download once at startup if missing) ---------------------------
+import nltk
+for _pkg in ['stopwords', 'punkt', 'wordnet', 'punkt_tab']:
+    try:
+        nltk.data.find(f'tokenizers/{_pkg}' if _pkg.startswith('punkt') else f'corpora/{_pkg}')
+    except LookupError:
+        nltk.download(_pkg, quiet=True)
+
 # -- Project root & paths ------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
