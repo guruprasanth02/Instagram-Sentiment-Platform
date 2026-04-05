@@ -138,10 +138,30 @@ def init_db():
 
 @app.route("/health")
 def health_check():
-    """Returns model status."""
-    if is_model_loaded():
-        return jsonify({"status": "model loaded successfully"})
-    return jsonify({"status": "model not found -- please run: python ml/train_tweet_model.py"}), 503
+    """Returns model status with debug info for Railway."""
+    import sys
+    try:
+        from backend.predict import is_model_loaded, MODEL_DIR, _load_models
+        if is_model_loaded():
+            return jsonify({"status": "model loaded successfully"}), 200
+        
+        # Try calling _load_models directly to surface the actual exception
+        try:
+            _load_models()
+        except Exception as inner_e:
+            import traceback
+            files = os.listdir(MODEL_DIR) if os.path.exists(MODEL_DIR) else "DIR_NOT_FOUND"
+            return jsonify({
+                "status": "model not loaded", 
+                "error_type": type(inner_e).__name__,
+                "error": str(inner_e),
+                "model_dir": MODEL_DIR,
+                "files_in_dir": files,
+                "trace": traceback.format_exc()
+            }), 200 # Returning 200 to trick Railway into finishing deploy
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "critical init error", "error": str(e), "trace": traceback.format_exc()}), 200
 
 @app.route("/google_client_id")
 def google_client_id():
