@@ -72,6 +72,15 @@ CORS(app)
 with app.app_context():
     db.create_all()
 
+# Eagerly load ML models immediately so the first request doesn't timeout on Vercel
+try:
+    from backend.predict import _load_models
+    print("Pre-loading algorithms into memory...", flush=True)
+    _load_models()
+    print("Models loaded successfully!", flush=True)
+except Exception as e:
+    print(f"Warning: Model pre-load failed (lazy load will trigger later): {e}", flush=True)
+
 # -- Helper Functions ----------------------------------------------------------
 
 def extract_post_id(url):
