@@ -47,3 +47,4 @@ analysis_results.json
 .env
 *.db
 
+.vercel

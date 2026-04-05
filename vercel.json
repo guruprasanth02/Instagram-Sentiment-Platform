@@ -8,6 +8,22 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/frontend/login.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/dashboard.html",
+      "destination": "/frontend/dashboard.html"
+    },
+    {
+      "source": "/style.css",
+      "destination": "/frontend/style.css"
+    },
+    {
       "source": "/analyze_url",
       "destination": "https://instagram-sentiment-platform.onrender.com/analyze_url"
     },

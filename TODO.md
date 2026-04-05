@@ -1,29 +1,27 @@
-# Hybrid Deploy: Frontend Vercel (Static + Proxy) + Backend Render (Flask API)
+# Instagram Sentiment Platform - Deployment Fix TODO
 
-Status: Files Ready (Step 2 ✅)
+## Plan: Fix Vercel v1→v2 Migration Render Error
+**Status: ✅ APPROVED by user**
 
-## Backend Render (Step 1-3)
-- [ ] 1. Push entire repo to GitHub main branch
-  Command: `git init & git add . & git commit -m \"Deploy\" & git remote add origin YOUR_GITHUB_REPO & git push -u origin main`
-- [x] 2. Deploy backend to Render.com (Web Service, Python)
-  - Build: `pip install -r requirements.txt & python -c \"import nltk; nltk.download('stopwords wordnet omw-1.4')\" & python ml/train_model.py`
-  - Start: `python backend/app.py`
-  - Env: `SECRET_KEY=sk-...`
-  - Get Backend URL: https://YOUR_APP.onrender.com
-- [ ] 3. Test backend: `curl https://YOUR_APP.onrender.com/health` → {\"status\":\"model loaded\"}
+### Step 1: [PENDING] Update vercel.json to v2+ format
+- Remove deprecated `builds` array  
+- Simplify 50+ rewrites → 3 clean rules
+- Static frontend + API proxy to Render
 
-## Frontend Vercel (Step 4-6)
-- [ ] 4. Update vercel.json with your Backend URL (created below)
-- [ ] 5. Install Vercel CLI: `npm i -g vercel`
-- [ ] 6. Login & deploy: `vercel login` then `vercel --prod`
-  Gets Frontend URL: https://YOUR_VERCEL.vercel.app
-  API calls auto-proxy to backend!
+### Step 2: [PENDING] Add favicon.ico
+- Create 16x16 placeholder PNG
+- Fix `/favicon.ico 404` log
 
-## Test (Step 7)
-- [ ] 7. Visit Frontend → Analyze → Should hit backend ML
+### Step 3: [PENDING] Redeploy with cache clear
+```bash
+vercel --prod
+```
 
-**Notes:**
-- No code changes needed!
-- Proxy /api/* → Backend
-- Free tiers ok for demo (Render SQLite resets on sleep)
+### Step 4: [PENDING] Verify
+- ✅ No "Legacy build" warnings
+- ✅ Dashboard renders (no 404)
+- ✅ API proxy works (`/api/health`)
+- ✅ Favicon loads
+
+**Next:** Execute Step 1 after tool result → Update progress
 
