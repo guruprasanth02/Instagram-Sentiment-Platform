@@ -25,67 +25,67 @@
     },
     {
       "source": "/analyze_url",
-      "destination": "https://instagram-sentiment-platform.onrender.com/analyze_url"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/analyze_url"
     },
     {
       "source": "/analyze_file",
-      "destination": "https://instagram-sentiment-platform.onrender.com/analyze_file"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/analyze_file"
     },
     {
       "source": "/me",
-      "destination": "https://instagram-sentiment-platform.onrender.com/me"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/me"
     },
     {
       "source": "/login",
-      "destination": "https://instagram-sentiment-platform.onrender.com/login"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/login"
     },
     {
       "source": "/register",
-      "destination": "https://instagram-sentiment-platform.onrender.com/register"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/register"
     },
     {
       "source": "/health",
-      "destination": "https://instagram-sentiment-platform.onrender.com/health"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/health"
     },
     {
       "source": "/results",
-      "destination": "https://instagram-sentiment-platform.onrender.com/results"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/results"
     },
     {
       "source": "/history",
-      "destination": "https://instagram-sentiment-platform.onrender.com/history"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/history"
     },
     {
       "source": "/logout",
-      "destination": "https://instagram-sentiment-platform.onrender.com/logout"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/logout"
     },
     {
       "source": "/reset-password-request",
-      "destination": "https://instagram-sentiment-platform.onrender.com/reset-password-request"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/reset-password-request"
     },
     {
       "source": "/reset-password",
-      "destination": "https://instagram-sentiment-platform.onrender.com/reset-password"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/reset-password"
     },
     {
       "source": "/update_profile",
-      "destination": "https://instagram-sentiment-platform.onrender.com/update_profile"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/update_profile"
     },
     {
       "source": "/compare",
-      "destination": "https://instagram-sentiment-platform.onrender.com/compare"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/compare"
     },
     {
       "source": "/init_db",
-      "destination": "https://instagram-sentiment-platform.onrender.com/init_db"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/init_db"
     },
     {
       "source": "/google_client_id",
-      "destination": "https://instagram-sentiment-platform.onrender.com/google_client_id"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/google_client_id"
     },
     {
       "source": "/download_report",
-      "destination": "https://instagram-sentiment-platform.onrender.com/download_report"
+      "destination": "https://YOUR_RAILWAY_APP.up.railway.app/download_report"
     },
     {
       "source": "/(.*)",
