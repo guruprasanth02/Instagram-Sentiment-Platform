@@ -82,6 +82,18 @@
       "destination": "https://instagram-sentiment-platform.onrender.com/download_report"
     },
     {
+      "source": "/config.js",
+      "destination": "/frontend/config.js"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/frontend/app.js"
+    },
+    {
+      "source": "/dashboard.js",
+      "destination": "/frontend/dashboard.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/frontend/$1"
     }

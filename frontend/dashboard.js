@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Health Check ─────────────────────────────────────────────────
     async function checkHealth() {
         try {
-            const res = await fetch('/health');
+            const res = await apiFetch('/health');
             const data = await res.json();
             const ok = data.status?.includes('loaded');
             if (healthDot) {
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Auth ─────────────────────────────────────────────────────────
     async function initAuth() {
         try {
-            const res = await fetch('/me');
+            const res = await apiFetch('/me');
             const data = await res.json();
             if (!data.guest) {
                 currentUser = data;
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         btn.disabled = true; btn.textContent = 'Saving…';
         try {
-            const res = await fetch('/update_profile', {
+            const res = await apiFetch('/update_profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: nameInput.value.trim() })
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             changePasswordBtn.textContent = 'Changing...';
 
             try {
-                const res = await fetch('/change_password', {
+                const res = await apiFetch('/change_password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ new_password: newPassword, confirm_password: confirmPassword })
@@ -325,7 +325,7 @@ async function handleCsvUpload(file) {
   uploadDropzone.parentNode.insertBefore(statusBox, uploadDropzone);
   
   try {
-    const res = await fetch('/analyze_file', { method: 'POST', body: formData });
+    const res = await apiFetch('/analyze_file', { method: 'POST', body: formData });
     const data = await res.json();
     if (res.ok) {
       statusBox.className = 'status-box success';
@@ -341,7 +341,7 @@ async function handleCsvUpload(file) {
 // ── Data Loading ─────────────────────────────────────────────────
     async function loadLatestResults() {
         try {
-            const res = await fetch('/results');
+            const res = await apiFetch('/results');
             const data = await res.json();
             if (!data.error) { currentResults = data; renderDashboard(data); }
         } catch (err) { console.error('Results load failed:', err); }
@@ -349,7 +349,7 @@ async function handleCsvUpload(file) {
 
     async function loadHistory() {
         try {
-            const res = await fetch('/history');
+            const res = await apiFetch('/history');
             historyData = await res.json();
             if (historyData.length > 0 && compareSelect) {
                 compareSelect.innerHTML = '<option value="">Select…</option>' +
@@ -489,7 +489,7 @@ async function handleCsvUpload(file) {
         try {
             const selected = historyData.find(a => a.id == val);
             setText('comp-label-1', `Analysis: ${new Date(selected.created_at).toLocaleDateString()}`);
-            const res = await fetch('/compare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id1: val, id2: currentResults.saved_analysis_id || (historyData[0]?.id) }) });
+            const res = await apiFetch('/compare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id1: val, id2: currentResults.saved_analysis_id || (historyData[0]?.id) }) });
             const comp = await res.json();
             if (!comp.error) {
                 setText('comp-score-1', `${comp.analysis1.positive_pct}%`);
@@ -507,7 +507,7 @@ async function handleCsvUpload(file) {
         const origText = btn?.textContent;
         if (btn) { btn.textContent = 'Downloading…'; btn.disabled = true; }
         try {
-            const res = await fetch('/download_report');
+            const res = await apiFetch('/download_report');
             if (res.ok) {
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -529,7 +529,7 @@ async function handleCsvUpload(file) {
     // ── Logout ───────────────────────────────────────────────────────
     document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
         e.preventDefault();
-        try { await fetch('/logout'); } catch {}
+        try { await apiFetch('/logout'); } catch {}
         window.location.href = 'login.html';
     });
 

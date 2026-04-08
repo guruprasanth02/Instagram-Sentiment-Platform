@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
 
   <style>
     .auth-page { display:flex; align-items:center; justify-content:center; min-height:calc(100vh - 64px); padding:2rem; position:relative; }
@@ -288,18 +289,18 @@
         btnSubmit.disabled = true; btnSubmit.textContent = isLogin ? 'Signing in…' : 'Creating…';
         try {
           const body = { email, password: pass }; if (!isLogin) body.name = name;
-          const res = await fetch(`/${type}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+          const res = await apiFetch(`/${type}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
           const data = await res.json();
           if (res.ok) {
             showMsg(isLogin ? 'Welcome! Redirecting…' : 'Account created!', false);
-            if (!isLogin) await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+            if (!isLogin) await apiFetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
             setTimeout(() => { window.location.href = 'index.html'; }, 800);
           } else { showMsg(data.error || 'Failed.', true); btnSubmit.disabled=false; btnSubmit.textContent=isLogin?'Sign In':'Sign Up'; }
         } catch { showMsg('Connection error.', true); btnSubmit.disabled=false; btnSubmit.textContent=isLogin?'Sign In':'Sign Up'; }
       });
 
       // Already logged in? Redirect
-      fetch('/me').then(r=>r.json()).then(d=>{ if(!d.guest) window.location.href='index.html'; }).catch(()=>{});
+      apiFetch('/me').then(r=>r.json()).then(d=>{ if(!d.guest) window.location.href='index.html'; }).catch(()=>{});
     });
   </script>
 </body>

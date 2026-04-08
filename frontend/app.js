@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Auth ─────────────────────────────────────────────────────────
     async function initAuth() {
         try {
-            const res = await fetch('/me');
+            const res = await apiFetch('/me');
             const data = await res.json();
             const profileNav = document.getElementById('nav-profile-link');
             const logoutBtn = document.getElementById('logout-btn');
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            try { await fetch('/logout'); } catch(e) {}
+            try { await apiFetch('/logout'); } catch(e) {}
             window.location.href = 'login.html';
         });
     }
@@ -268,7 +268,7 @@ async function analyzeUrl(url, urls = null) {
     if (urls) body.urls = urls;
     if (saveHistory) body.save_to_history = true;
     try {
-        const response = await fetch('/analyze_url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const response = await apiFetch('/analyze_url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await response.json();
         if (response.ok) {
             showStatus(`✅ ${data.total} comments analyzed successfully!`, 'success');
@@ -283,7 +283,7 @@ async function analyzeFile(file) {
     formData.append('file', file);
     if (document.getElementById('save-history')?.checked) formData.append('save_to_history', 'true');
     try {
-        const response = await fetch('/analyze_file', { method: 'POST', body: formData });
+        const response = await apiFetch('/analyze_file', { method: 'POST', body: formData });
         const data = await response.json();
         if (response.ok) {
             showStatus(`✅ ${data.total} comments analyzed!`, 'success');
