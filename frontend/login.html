@@ -31,6 +31,19 @@
     #auth-status.error { display:block; background:var(--c-neg-bg); color:var(--c-neg); border:1px solid var(--c-neg-border); }
     #auth-status.success { display:block; background:var(--c-pos-bg); color:var(--c-pos); border:1px solid var(--c-pos-border); }
 
+    /* Password toggle */
+    .pw-wrapper { position:relative; }
+    .pw-wrapper input { padding-right:2.8rem !important; box-sizing:border-box; }
+    .pw-toggle {
+      position:absolute; right:0.75rem; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer; padding:0;
+      color:var(--c-text-3); display:flex; align-items:center; justify-content:center;
+      transition:color 0.2s ease;
+    }
+    .pw-toggle:hover { color:var(--c-brand); }
+    .pw-toggle svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:opacity 0.15s ease; }
+    .pw-toggle .icon-eye-off { display:none; }
+
     /* Google Sign-In Button */
 
     /* Login-required toast */
@@ -134,7 +147,22 @@
         </div>
         <div class="auth-field">
           <label for="password">Password</label>
-          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+          <div class="pw-wrapper">
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="pw-toggle" id="pw-toggle-btn" aria-label="Toggle password visibility">
+              <!-- Eye icon (visible = password hidden) -->
+              <svg class="icon-eye" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <!-- Eye-off icon (visible = password shown) -->
+              <svg class="icon-eye-off" viewBox="0 0 24 24">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="auth-actions">
           <button type="submit" id="btn-submit" class="btn-primary">Sign In</button>
@@ -214,6 +242,22 @@
       }
     })();
 
+    // Password Show/Hide Toggle
+    (function() {
+      const pwInput = document.getElementById('password');
+      const pwBtn   = document.getElementById('pw-toggle-btn');
+      const eyeOn   = pwBtn.querySelector('.icon-eye');
+      const eyeOff  = pwBtn.querySelector('.icon-eye-off');
+
+      pwBtn.addEventListener('click', () => {
+        const isHidden = pwInput.type === 'password';
+        pwInput.type = isHidden ? 'text' : 'password';
+        eyeOn.style.display  = isHidden ? 'none'  : 'block';
+        eyeOff.style.display = isHidden ? 'block' : 'none';
+        pwBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      });
+    })();
+
     // Auth Logic
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('auth-form');
@@ -228,7 +272,7 @@
       const subEl = document.getElementById('auth-subtitle-text');
       let isLogin = true;
 
-      function showMsg(msg, err) { status.textContent = msg; status.className = err ? 'error' : 'success'; }
+      function showMsg(msg, err) { status.textContent = msg; status.style.display = ''; status.className = err ? 'error' : 'success'; }
 
       btnToggle.addEventListener('click', () => {
         isLogin = !isLogin; status.style.display = 'none';
