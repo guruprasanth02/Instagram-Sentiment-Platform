@@ -56,6 +56,12 @@ os.makedirs(instance_dir, exist_ok=True)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Session cookie must be SameSite=None; Secure to work cross-origin
+# (Vercel frontend → Render backend direct calls with credentials:include)
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
 db.init_app(app)
 
 login_manager = LoginManager()
@@ -66,8 +72,15 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# CORS -- allow all origins
-CORS(app)
+# CORS — allow credentials from known frontend origins.
+# Add your Vercel URL (and any preview URLs) to FRONTEND_ORIGINS env var,
+# comma-separated. Falls back to localhost for local dev.
+_raw_origins = os.getenv(
+    'FRONTEND_ORIGINS',
+    'http://localhost:8000,http://127.0.0.1:8000,http://localhost:5000,http://127.0.0.1:5000'
+)
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(',') if o.strip()]
+CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS)
 
 with app.app_context():
     db.create_all()
