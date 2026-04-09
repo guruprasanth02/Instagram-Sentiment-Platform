@@ -626,7 +626,7 @@ def get_results():
 
 @app.route("/download_report")
 def download_report():
-    """Download the latest analysis results as a CSV file."""
+    """Download the latest analysis results as a PDF file."""
     try:
         with open(RESULTS_FILE, "r") as f:
             content = f.read()
@@ -638,42 +638,107 @@ def download_report():
             return jsonify({"error": "No analysis data to export"}), 404
         
         import io
-        import csv
         from flask import Response
+        try:
+            from fpdf import FPDF
+        except ImportError:
+            import subprocess
+            import sys
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "fpdf2"])
+                from fpdf import FPDF
+            except Exception as eInstall:
+                return jsonify({"error": f"Failed to auto-install fpdf2 in your environment: {eInstall}"}), 500
+        from datetime import datetime as dt
         
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(['Comment', 'Sentiment', 'Confidence Score', 'Timestamp'])
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", size=16, style='B')
+        pdf.cell(200, 10, text="Sentiment Analysis Report", new_x="LMARGIN", new_y="NEXT", align='C')
+        pdf.ln(5)
+        
+        # Summary Section
+        pdf.set_font("helvetica", size=12, style='B')
+        pdf.cell(200, 10, text="--- Summary ---", new_x="LMARGIN", new_y="NEXT", align='L')
+        pdf.set_font("helvetica", size=10)
+        pdf.cell(100, 8, text=f"Total Comments: {results.get('total', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(100, 8, text=f"Positive: {results.get('positive_count', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(100, 8, text=f"Neutral: {results.get('neutral_count', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(100, 8, text=f"Negative: {results.get('negative_count', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(100, 8, text=f"Satisfaction Score: {results.get('satisfaction_score', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+        
+        # Comments Table Header
+        pdf.set_font("helvetica", size=12, style='B')
+        pdf.cell(200, 10, text="--- Comments History ---", new_x="LMARGIN", new_y="NEXT", align='L')
+        pdf.set_font("helvetica", size=9, style='B')
+        
+        # Determine column widths
+        col1_w = 110 # Comment
+        col2_w = 25  # Sentiment
+        col3_w = 25  # Score
+        col4_w = 30  # Date
+        line_height = pdf.font_size * 2.5
+        
+        pdf.cell(col1_w, line_height, "Comment", border=1, align="C")
+        pdf.cell(col2_w, line_height, "Sentiment", border=1, align="C")
+        pdf.cell(col3_w, line_height, "Score", border=1, align="C")
+        pdf.cell(col4_w, line_height, "Timestamp", border=1, new_x="LMARGIN", new_y="NEXT", align="C")
+        
+        pdf.set_font("helvetica", size=8)
         
         for item in history:
-            from datetime import datetime as dt
             ts = item.get('timestamp', 0)
-            ts_str = dt.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else ''
-            writer.writerow([
-                item.get('comment', ''),
-                item.get('sentiment', ''),
-                item.get('score', 0),
-                ts_str
-            ])
+            ts_str = dt.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M') if ts else ''
+            
+            # Encode comment to latin-1 or handle errors since fpdf basic fonts only support latin-1
+            # Replace unsupported characters to avoid UnicodeEncodeError
+            comment = item.get('comment', '')
+            try:
+                comment_encoded = comment.encode('latin-1', 'replace').decode('latin-1')
+            except:
+                comment_encoded = "(Unicode Parse Error)"
+                
+            sentiment = str(item.get('sentiment', ''))
+            score = str(round(item.get('score', 0), 2))
+            
+            # Using multi_cell for comments to handle long text
+            # We must track x,y coordinates since multi_cell moves cursor to next line
+            x_start = pdf.get_x()
+            y_start = pdf.get_y()
+            
+            # Check for page break
+            if y_start + line_height * 2 > pdf.page_break_trigger:
+                pdf.add_page()
+                x_start = pdf.get_x()
+                y_start = pdf.get_y()
+
+            pdf.multi_cell(col1_w, line_height/1.5, text=comment_encoded, border=1, align="L")
+            # Get height of the multi_cell for bounding box
+            y_end = pdf.get_y()
+            multi_cell_height = y_end - y_start
+            
+            # Draw remaining cells with matching height
+            pdf.set_xy(x_start + col1_w, y_start)
+            pdf.cell(col2_w, multi_cell_height, text=sentiment, border=1, align="C")
+            pdf.cell(col3_w, multi_cell_height, text=score, border=1, align="C")
+            pdf.cell(col4_w, multi_cell_height, text=ts_str, border=1, align="C", new_x="LMARGIN", new_y="NEXT")
         
-        # Add summary rows
-        writer.writerow([])
-        writer.writerow(['--- Summary ---'])
-        writer.writerow(['Total Comments', results.get('total', 0)])
-        writer.writerow(['Positive', results.get('positive_count', 0)])
-        writer.writerow(['Neutral', results.get('neutral_count', 0)])
-        writer.writerow(['Negative', results.get('negative_count', 0)])
-        writer.writerow(['Satisfaction Score', results.get('satisfaction_score', 0)])
-        
-        csv_data = output.getvalue()
+        pdf_data = pdf.output(dest='S')
+        # if pdf_data is string (fpdf1 behaviour or some mode), encoding to bytes
+        if isinstance(pdf_data, str):
+            pdf_data = pdf_data.encode('latin-1')
+            
         return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=sentiment_report.csv'}
+            pdf_data,
+            mimetype='application/pdf',
+            headers={'Content-Disposition': 'attachment; filename=sentiment_report.pdf'}
         )
     except FileNotFoundError:
         return jsonify({"error": "No analysis results found. Run an analysis first."}), 404
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
