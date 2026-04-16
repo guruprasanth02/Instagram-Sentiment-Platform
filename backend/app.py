@@ -73,14 +73,35 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # CORS — allow credentials from known frontend origins.
-# Add your Vercel URL (and any preview URLs) to FRONTEND_ORIGINS env var,
-# comma-separated. Falls back to localhost for local dev.
+# Set FRONTEND_ORIGINS env var on Render (comma-separated) to include your
+# Vercel URL, e.g.:
+#   https://instagram-sentiment-platform.vercel.app
+# Falls back to localhost + the known production Vercel URL for safety.
 _raw_origins = os.getenv(
     'FRONTEND_ORIGINS',
-    'http://localhost:8000,http://127.0.0.1:8000,http://localhost:5000,http://127.0.0.1:5000'
+    'http://localhost:8000,http://127.0.0.1:8000,http://localhost:5000,'
+    'http://127.0.0.1:5000,https://instagram-sentiment-platform.vercel.app'
 )
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(',') if o.strip()]
 CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS)
+
+@app.after_request
+def add_cors_headers(response):
+    """Ensure CORS headers are always present, even on error responses."""
+    origin = request.headers.get('Origin', '')
+    if origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
+
+@app.route('/', methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+def handle_options(path=''):
+    """Respond to preflight OPTIONS requests."""
+    response = app.make_default_options_response()
+    return response
 
 with app.app_context():
     db.create_all()
