@@ -501,28 +501,332 @@ async function handleCsvUpload(file) {
         finally { runCompareBtn.disabled = false; runCompareBtn.textContent = 'Run Comparison'; }
     });
 
-    // ── Download Report ──────────────────────────────────────────────
+    // ── Download Report (client-side PDF via jsPDF + html2canvas) ────────
     document.getElementById('download-report-btn')?.addEventListener('click', async () => {
         const btn = document.getElementById('download-report-btn');
         const origText = btn?.textContent;
-        if (btn) { btn.textContent = 'Downloading…'; btn.disabled = true; }
+        if (btn) { btn.textContent = 'Generating PDF…'; btn.disabled = true; }
         try {
-            const res = await apiFetch('/download_report');
-            if (res.ok) {
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'sentiment_report.csv'; a.click();
-                URL.revokeObjectURL(url);
-            } else {
+            // Fetch the raw results JSON from the backend
+            const res = await apiFetch('/results');
+            if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 alert(data.error || 'No report available. Run an analysis first.');
+                return;
             }
+            const data = await res.json();
+            if (data.error) { alert(data.error); return; }
+
+            // ── Load jsPDF ──
+            if (!window.jspdf) {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                    s.onload = resolve; s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+            }
+
+            // ── Load html2canvas ──
+            if (!window.html2canvas) {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                    s.onload = resolve; s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+            }
+
+            // ── Capture Charts as images ──
+            async function canvasToImgData(canvasId) {
+                const el = document.getElementById(canvasId);
+                if (!el) return null;
+                try {
+                    // Use the raw chart canvas directly (much faster, no html2canvas needed for canvas elements)
+                    return el.toDataURL('image/png');
+                } catch(e) { return null; }
+            }
+
+            const donutImgData  = await canvasToImgData('sentimentChart');
+            const trendImgData  = await canvasToImgData('trendChart');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pw = doc.internal.pageSize.getWidth();
+            const margin = 15;
+            let y = 20;
+
+            // ══════════════════════════════════════════════
+            // PAGE 1 — Header + Summary Stats + Charts
+            // ══════════════════════════════════════════════
+
+            // ── Header bar ──
+            doc.setFillColor(99, 102, 241);
+            doc.rect(0, 0, pw, 18, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(255, 255, 255);
+            doc.text('SentiGram — Sentiment Analysis Report', pw / 2, 12, { align: 'center' });
+            y = 24;
+
+            doc.setFontSize(8);
+            doc.setTextColor(130, 130, 150);
+            doc.setFont('helvetica', 'normal');
+            const now = new Date().toLocaleString();
+            doc.text(`Generated: ${now}   |   Post/Source: ${data.post_id || 'Uploaded CSV'}`, margin, y);
+            y += 8;
+
+            // ── Summary Stat Boxes ──
+            const total = data.total || 0;
+            const pos   = data.positive_count || 0;
+            const neu   = data.neutral_count  || 0;
+            const neg   = data.negative_count || 0;
+            const sat   = data.satisfaction_score || 0;
+            const pp    = total ? Math.round(pos / total * 100) : 0;
+            const np    = total ? Math.round(neu / total * 100) : 0;
+            const ngp   = total ? Math.round(neg / total * 100) : 0;
+
+            const statBoxes = [
+                { label: 'Total',    value: String(total), color: [100, 100, 220] },
+                { label: 'Positive', value: `${pos} (${pp}%)`,  color: [16, 185, 129] },
+                { label: 'Neutral',  value: `${neu} (${np}%)`,  color: [139, 92, 246] },
+                { label: 'Negative', value: `${neg} (${ngp}%)`, color: [239, 68, 68]  },
+                { label: 'Score',    value: `${sat}/10`,         color: [251, 191, 36] },
+            ];
+
+            const boxW = (pw - margin * 2) / statBoxes.length - 2;
+            statBoxes.forEach((box, i) => {
+                const bx = margin + i * (boxW + 2);
+                doc.setFillColor(...box.color);
+                doc.rect(bx, y, boxW, 1.5, 'F');  // colored top bar
+                doc.setFillColor(245, 245, 255);
+                doc.rect(bx, y + 1.5, boxW, 14, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(...box.color);
+                doc.text(box.value, bx + boxW / 2, y + 10, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                doc.setTextColor(100, 100, 120);
+                doc.text(box.label, bx + boxW / 2, y + 14.5, { align: 'center' });
+            });
+            y += 22;
+
+            // ── Charts (side by side) ──
+            const chartY = y;
+            const chartW = (pw - margin * 2) / 2 - 3;
+            const chartH = 65;
+
+            // Section label
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 90);
+            doc.text('Sentiment Distribution', margin, y);
+            doc.text('Response Trend', margin + chartW + 6, y);
+            y += 4;
+
+            // Chart images
+            if (donutImgData) {
+                doc.addImage(donutImgData, 'PNG', margin, y, chartW, chartH);
+            } else {
+                doc.setFillColor(240, 240, 250);
+                doc.rect(margin, y, chartW, chartH, 'F');
+                doc.setFontSize(8); doc.setTextColor(160,160,180);
+                doc.text('Chart not available', margin + chartW/2, y + chartH/2, { align:'center' });
+            }
+            if (trendImgData) {
+                doc.addImage(trendImgData, 'PNG', margin + chartW + 6, y, chartW, chartH);
+            } else {
+                doc.setFillColor(240, 240, 250);
+                doc.rect(margin + chartW + 6, y, chartW, chartH, 'F');
+                doc.setFontSize(8); doc.setTextColor(160,160,180);
+                doc.text('Chart not available', margin + chartW + 6 + chartW/2, y + chartH/2, { align:'center' });
+            }
+            y += chartH + 6;
+
+            // ── Legend ──
+            const legendItems = [
+                { label: 'Positive', color: [16, 185, 129] },
+                { label: 'Neutral',  color: [139, 92, 246] },
+                { label: 'Negative', color: [239, 68, 68]  },
+            ];
+            let lx = margin;
+            legendItems.forEach(l => {
+                doc.setFillColor(...l.color);
+                doc.circle(lx + 2, y, 1.5, 'F');
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(60, 60, 80);
+                doc.text(l.label, lx + 5, y + 1);
+                lx += 25;
+            });
+            y += 8;
+
+            // ── Top Comments ──
+            if (data.top_positive || data.top_negative) {
+                doc.setDrawColor(220, 220, 235);
+                doc.line(margin, y, pw - margin, y);
+                y += 6;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 90);
+                doc.text('Top Comments', margin, y);
+                y += 5;
+
+                if (data.top_positive) {
+                    doc.setFillColor(230, 255, 245);
+                    const posLines = doc.splitTextToSize(`"${data.top_positive}"`, pw - margin * 2 - 4);
+                    doc.rect(margin, y - 3, pw - margin * 2, posLines.length * 5 + 4, 'F');
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(5, 150, 105);
+                    doc.text('POSITIVE', margin + 2, y);
+                    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(20, 100, 60);
+                    doc.text(posLines, margin + 2, y + 4);
+                    y += posLines.length * 5 + 6;
+                }
+
+                if (data.top_negative) {
+                    doc.setFillColor(255, 235, 235);
+                    const negLines = doc.splitTextToSize(`"${data.top_negative}"`, pw - margin * 2 - 4);
+                    doc.rect(margin, y - 3, pw - margin * 2, negLines.length * 5 + 4, 'F');
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(220, 38, 38);
+                    doc.text('NEGATIVE', margin + 2, y);
+                    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(150, 20, 20);
+                    doc.text(negLines, margin + 2, y + 4);
+                    y += negLines.length * 5 + 6;
+                }
+            }
+
+            // ── Recommendations ──
+            if (data.recommendations && data.recommendations.length > 0) {
+                if (y > 230) { doc.addPage(); y = 20; }
+                else {
+                    doc.setDrawColor(220, 220, 235);
+                    doc.line(margin, y, pw - margin, y);
+                    y += 6;
+                }
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 90);
+                doc.text('AI Recommendations', margin, y);
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8.5);
+                data.recommendations.forEach(rec => {
+                    const lines = doc.splitTextToSize(`• ${rec}`, pw - margin * 2 - 4);
+                    if (y + lines.length * 5 > 280) { doc.addPage(); y = 20; }
+                    doc.setTextColor(60, 60, 80);
+                    doc.text(lines, margin + 2, y);
+                    y += lines.length * 5 + 2;
+                });
+            }
+
+            // ══════════════════════════════════════════════
+            // REMAINING PAGES — Comments Table
+            // ══════════════════════════════════════════════
+            if (data.history && data.history.length > 0) {
+                doc.addPage();
+                y = 20;
+
+                // Page header
+                doc.setFillColor(99, 102, 241);
+                doc.rect(0, 0, pw, 14, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(11);
+                doc.setTextColor(255, 255, 255);
+                doc.text('Comment Details', pw / 2, 10, { align: 'center' });
+                y = 20;
+
+                // Table header
+                const col = { comment: margin, sentiment: margin + 112, score: margin + 142, time: margin + 162 };
+                const colW = { comment: 110, sentiment: 28, score: 18, time: 22 };
+                const rowH = 7;
+
+                doc.setFillColor(232, 232, 255);
+                doc.rect(margin, y - 5, pw - margin * 2, rowH, 'F');
+                doc.setFontSize(8.5);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(40, 40, 80);
+                doc.text('Comment', col.comment + 1, y);
+                doc.text('Sentiment', col.sentiment + 1, y);
+                doc.text('Score', col.score + 1, y);
+                doc.text('Time', col.time + 1, y);
+                y += rowH - 1;
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+
+                data.history.forEach((item, idx) => {
+                    const commentLines = doc.splitTextToSize(item.comment || '', colW.comment - 3);
+                    const cellH = Math.max(rowH, commentLines.length * 4.2 + 1);
+
+                    if (y + cellH > 282) {
+                        // ── Page footer ──
+                        doc.setFontSize(7); doc.setTextColor(160,160,180);
+                        doc.text('SentiGram Analytics Report', pw / 2, 291, { align: 'center' });
+
+                        doc.addPage();
+                        // Mini header on continuation pages
+                        doc.setFillColor(230, 230, 248);
+                        doc.rect(0, 0, pw, 10, 'F');
+                        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(80,80,160);
+                        doc.text('Comment Details (continued)', pw/2, 7, { align:'center' });
+                        y = 15;
+
+                        // Repeat column headers
+                        doc.setFillColor(232, 232, 255);
+                        doc.rect(margin, y - 5, pw - margin * 2, rowH, 'F');
+                        doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(40,40,80);
+                        doc.text('Comment', col.comment + 1, y);
+                        doc.text('Sentiment', col.sentiment + 1, y);
+                        doc.text('Score', col.score + 1, y);
+                        doc.text('Time', col.time + 1, y);
+                        y += rowH - 1;
+                        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+                    }
+
+                    // Alternating row background
+                    doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 255 : 255);
+                    doc.rect(margin, y - 4, pw - margin * 2, cellH, 'F');
+
+                    // Comment text
+                    doc.setTextColor(50, 50, 70);
+                    doc.text(commentLines, col.comment + 1, y);
+
+                    // Sentiment colored
+                    const sentiment = (item.sentiment || '').toLowerCase();
+                    if      (sentiment === 'positive') doc.setTextColor(5, 150, 105);
+                    else if (sentiment === 'negative') doc.setTextColor(220, 38, 38);
+                    else                               doc.setTextColor(109, 40, 217);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(item.sentiment || '', col.sentiment + 1, y);
+
+                    // Score
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 70);
+                    doc.text(String((item.score || 0).toFixed(2)), col.score + 1, y);
+
+                    // Timestamp
+                    const ts = item.timestamp ? new Date(item.timestamp * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+                    doc.text(ts, col.time + 1, y);
+
+                    y += cellH + 0.5;
+                });
+            }
+
+            // ── Final footer on last page ──
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(160, 160, 180);
+                doc.text(`SentiGram Analytics Report  •  Page ${i} of ${pageCount}`, pw / 2, 293, { align: 'center' });
+            }
+
+            doc.save('sentiment_report.pdf');
         } catch (e) { 
-            console.error('Download failed:', e);
-            alert('Download failed. Please try again.');
+            console.error('PDF generation failed:', e);
+            alert('PDF generation failed: ' + e.message);
         } finally {
-            if (btn) { btn.textContent = origText || 'Download CSV'; btn.disabled = false; }
+            if (btn) { btn.textContent = origText || 'Download PDF'; btn.disabled = false; }
         }
     });
 
