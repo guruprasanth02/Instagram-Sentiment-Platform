@@ -12,6 +12,16 @@ An end-to-end AI platform that analyzes Instagram comments and classifies them a
 - **Interactive Dashboard**: Pie chart, bar chart, comment history
 - **Battle-tested ML**: TF-IDF + Linear SVM (90%+ accuracy)
 
+---
+
+## 🌐 Live Demo
+Try the app here: https://instagram-sentiment-platform.vercel.app/
+
+How to use:
+
+- Paste an Instagram post URL in the input box
+- Submit to run sentiment analysis on the (simulated) comments
+- View results on the dashboard (Positive / Neutral / Negative + charts + history)
 
 ---
 
