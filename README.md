@@ -15,7 +15,7 @@ An end-to-end AI platform that analyzes Instagram comments and classifies them a
 ---
 
 ## 🌐 Live Demo
-Try the app here: **[Instagram-Sentiment-Platform](https://instagram-sentiment-platform.vercel.app/)
+Try the app here: **[Instagram-Sentiment-Platform](https://instagram-sentiment-platform.vercel.app/)**
 
 How to use:
 
